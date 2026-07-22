@@ -34,9 +34,18 @@
     th { background: #f8fafc; color: #475569; font-size: 11px; text-transform: uppercase; }
     .tag-in { background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
     .tag-out { background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+
+    #loadingOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; color: #fff; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
+
+  <div id="loadingOverlay" class="hidden">
+    <div style="background: #fff; color: #000; padding: 20px 30px; border-radius: 12px; text-align: center;">
+      <p style="font-weight: bold; font-size: 14px;">🔄 กำลังซิงค์ข้อมูลน้ำมันกับ Cloud...</p>
+    </div>
+  </div>
 
   <div class="container">
     <!-- Header -->
@@ -45,7 +54,7 @@
         <h1>🛢️ Oil Store Control System</h1>
         <p style="font-size: 12px; opacity: 0.8; margin-top: 2px;">ระบบควบคุมและติดตามการรับ-จ่ายน้ำมัน Real-time</p>
       </div>
-      <button onclick="loadOilData()" class="btn" style="background: #334155; color: #fff;">🔄 รีเฟรชข้อมูล</button>
+      <button onclick="loadOilData()" class="btn" style="background: #334155; color: #fff;">🔄 ดึงข้อมูลล่าสุด</button>
     </div>
 
     <!-- KPIs -->
@@ -55,11 +64,11 @@
         <div id="kpiStock" class="kpi-value" style="color: #0284c7;">0 ลิตร</div>
       </div>
       <div class="kpi-card" style="border-top-color: #16a34a;">
-        <div class="kpi-title">รับเข้าเดือนนี้</div>
+        <div class="kpi-title">รับเข้าทั้งหมด</div>
         <div id="kpiIn" class="kpi-value" style="color: #16a34a;">0 ลิตร</div>
       </div>
       <div class="kpi-card" style="border-top-color: #dc2626;">
-        <div class="kpi-title">จ่ายออกเดือนนี้</div>
+        <div class="kpi-title">จ่ายออกทั้งหมด</div>
         <div id="kpiOut" class="kpi-value" style="color: #dc2626;">0 ลิตร</div>
       </div>
     </div>
@@ -135,21 +144,116 @@
   </div>
 
   <script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQBXdSHpcCXa5hM2asS-9w1xEwXVoPuuRUHCsjNR1k9zEKCdILqT8OslxxWsJsLVV0/exec";
+
+    let oilLogs = [];
+
+    function showLoading(show) {
+      document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
+    }
+
     function toggleFormMode() {
       const type = document.getElementById('transType').value;
       const destLabel = document.getElementById('destLabel');
       destLabel.textContent = type === 'IN' ? 'รับจาก (Supplier / คลัง)' : 'จุดจ่าย / เครื่องจักรที่รับ';
     }
 
-    function submitOilTransaction(e) {
-      e.preventDefault();
-      alert("✅ บันทึกรายการเรียบร้อยแล้ว (ตัวอย่างการเชื่อมต่อกับ Google Apps Script)");
-      document.getElementById('oilForm').reset();
+    async function loadOilData() {
+      showLoading(true);
+      try {
+        const res = await fetch(`${GOOGLE_SCRIPT_URL}?module=oil`, { method: 'GET', redirect: 'follow' });
+        oilLogs = await res.json();
+        renderOilData();
+      } catch (err) {
+        alert("❌ เกิดข้อผิดพลาดในการดึงข้อมูลคลังน้ำมัน");
+        console.error(err);
+      } finally {
+        showLoading(false);
+      }
     }
 
-    function loadOilData() {
-      // ดึงข้อมูล Real-time จาก Google Sheets
+    async function submitOilTransaction(e) {
+      e.preventDefault();
+      showLoading(true);
+
+      const data = {
+        type: document.getElementById('transType').value,
+        oilType: document.getElementById('oilType').value,
+        qty: parseFloat(document.getElementById('oilQty').value) || 0,
+        destination: document.getElementById('destination').value,
+        meterStart: document.getElementById('meterStart').value,
+        meterEnd: document.getElementById('meterEnd').value,
+        operator: document.getElementById('operator').value
+      };
+
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: "addOilTransaction", data: data })
+        });
+
+        document.getElementById('oilForm').reset();
+        toggleFormMode();
+        setTimeout(loadOilData, 1500);
+        alert("✅ บันทึกรายการรับ-จ่ายน้ำมัน เรียบร้อยแล้ว!");
+      } catch (err) {
+        alert("❌ บันทึกรายการไม่สำเร็จ");
+        showLoading(false);
+      }
     }
+
+    function renderOilData() {
+      let totalIn = 0;
+      let totalOut = 0;
+
+      const tbody = document.getElementById('oilTableBody');
+      tbody.innerHTML = '';
+
+      if (!oilLogs || oilLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 20px;">ยังไม่มีข้อมูลการรับ-จ่ายน้ำมัน</td></tr>`;
+        document.getElementById('kpiStock').textContent = '0 ลิตร';
+        document.getElementById('kpiIn').textContent = '0 ลิตร';
+        document.getElementById('kpiOut').textContent = '0 ลิตร';
+        return;
+      }
+
+      // วนลูปคำนวณและแสดงผลรายการ (เรียงรายการใหม่อยู่บนสุด)
+      [...oilLogs].reverse().forEach(item => {
+        const qty = Number(item.qty) || 0;
+        if (item.type === 'IN') {
+          totalIn += qty;
+        } else {
+          totalOut += qty;
+        }
+
+        const tag = item.type === 'IN' 
+          ? `<span class="tag-in">🟢 รับเข้า</span>` 
+          : `<span class="tag-out">🔴 จ่ายออก</span>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-size: 12px; color: #64748b;">${item.timestamp || '-'}</td>
+          <td>${tag}</td>
+          <td style="font-weight: bold;">${item.oilType}</td>
+          <td style="text-align: right; font-weight: bold; color: ${item.type === 'IN' ? '#16a34a' : '#dc2626'};">
+            ${item.type === 'IN' ? '+' : '-'}${qty.toLocaleString(undefined, {minimumFractionDigits: 1})}
+          </td>
+          <td>${item.destination || '-'}</td>
+          <td style="font-size: 12px; color: #475569;">${item.meterStart || '-'} ➔ ${item.meterEnd || '-'}</td>
+          <td style="font-weight: bold;">${item.operator || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const currentStock = totalIn - totalOut;
+      document.getElementById('kpiStock').textContent = `${currentStock.toLocaleString(undefined, {minimumFractionDigits: 1})} ลิตร`;
+      document.getElementById('kpiIn').textContent = `${totalIn.toLocaleString(undefined, {minimumFractionDigits: 1})} ลิตร`;
+      document.getElementById('kpiOut').textContent = `${totalOut.toLocaleString(undefined, {minimumFractionDigits: 1})} ลิตร`;
+    }
+
+    window.onload = loadOilData;
   </script>
 </body>
 </html>
