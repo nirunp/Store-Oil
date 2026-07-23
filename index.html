@@ -2,161 +2,186 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Oil Store Control System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mobile Oil Control Dashboard</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #f1f5f9; padding: 15px; color: #0f172a; }
-    .container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    body { background-color: #0f172a; color: #f8fafc; padding: 12px; }
+    .container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+    /* Header */
+    .header { background: #1e293b; padding: 16px; border-radius: 14px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 18px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px; }
+    .btn-refresh { background: #334155; color: #f8fafc; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+
+    /* Dashboard Grid (4 ชนิดน้ำมัน) */
+    .dashboard-title { font-size: 14px; font-weight: bold; color: #94a3b8; margin-bottom: 2px; }
+    .oil-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .oil-card { background: #1e293b; padding: 12px; border-radius: 12px; border: 1px solid #334155; position: relative; overflow: hidden; }
+    .oil-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #38bdf8; }
+    .oil-name { font-size: 12px; font-weight: bold; color: #cbd5e1; height: 32px; display: flex; align-items: center; }
+    .oil-qty { font-size: 20px; font-weight: 800; color: #f8fafc; margin-top: 4px; }
+    .oil-unit { font-size: 11px; color: #64748b; font-weight: normal; }
+
+    /* Form Panel (Mobile Entry) */
+    .mobile-form { background: #1e293b; padding: 16px; border-radius: 16px; border: 1px solid #334155; }
+    .form-title { font-size: 15px; font-weight: bold; color: #f8fafc; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
     
-    .header { background: #1e293b; color: #fff; padding: 18px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-    .header h1 { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-    
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-    .kpi-card { background: #fff; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; border-top: 4px solid #0284c7; }
-    .kpi-title { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; }
-    .kpi-value { font-size: 22px; font-weight: 800; margin-top: 4px; }
+    .type-selector { display: flex; gap: 8px; margin-bottom: 12px; }
+    .type-btn { flex: 1; padding: 12px; border-radius: 10px; border: 2px solid #334155; background: #0f172a; color: #94a3b8; font-weight: bold; font-size: 14px; cursor: pointer; text-align: center; }
+    .type-btn.active-in { background: #065f46; color: #34d399; border-color: #10b981; }
+    .type-btn.active-out { background: #881337; color: #fda4af; border-color: #f43f5e; }
 
-    .card { background: #fff; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; }
-    .card-title { font-size: 15px; font-weight: bold; color: #0369a1; margin-bottom: 12px; }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 11px; font-weight: bold; color: #94a3b8; margin-bottom: 4px; }
+    .form-group select, .form-group input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 14px; font-weight: bold; outline: none; }
+    .form-group select:focus, .form-group input:focus { border-color: #38bdf8; }
 
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-    .form-group { display: flex; flex-direction: column; gap: 4px; }
-    .form-group label { font-size: 12px; font-weight: bold; color: #475569; }
-    .form-group input, .form-group select { padding: 9px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: bold; }
+    .quick-qty { display: flex; gap: 6px; margin-top: 6px; }
+    .quick-btn { flex: 1; background: #334155; color: #fff; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-    .btn { padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; font-size: 13px; }
-    .btn-submit { background: #0284c7; color: #fff; width: 100%; margin-top: 12px; font-size: 14px; }
-    .btn-submit:hover { background: #0369a1; }
+    .btn-submit { width: 100%; padding: 14px; border-radius: 10px; border: none; font-size: 15px; font-weight: 800; cursor: pointer; margin-top: 10px; background: #0284c7; color: #fff; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3); }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    th { background: #f8fafc; color: #475569; font-size: 11px; text-transform: uppercase; }
-    .tag-in { background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-    .tag-out { background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    /* History Log */
+    .history-card { background: #1e293b; padding: 16px; border-radius: 14px; border: 1px solid #334155; }
+    .log-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #334155; }
+    .log-item:last-child { border-bottom: none; }
+    .log-tag { font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
+    .tag-in { background: #065f46; color: #34d399; }
+    .tag-out { background: #881337; color: #fda4af; }
 
-    #loadingOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; color: #fff; }
+    #loadingOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; color: #fff; }
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
   <div id="loadingOverlay" class="hidden">
-    <div style="background: #fff; color: #000; padding: 20px 30px; border-radius: 12px; text-align: center;">
-      <p style="font-weight: bold; font-size: 14px;">🔄 กำลังซิงค์ข้อมูลน้ำมันกับ Cloud...</p>
+    <div style="background: #1e293b; color: #fff; padding: 20px 30px; border-radius: 12px; text-align: center; border: 1px solid #334155;">
+      <p style="font-weight: bold; font-size: 14px;">🔄 กำลังซิงค์ข้อมูลกับ Cloud...</p>
     </div>
   </div>
 
   <div class="container">
+    
     <!-- Header -->
     <div class="header">
       <div>
-        <h1>🛢️ Oil Store Control System</h1>
-        <p style="font-size: 12px; opacity: 0.8; margin-top: 2px;">ระบบควบคุมและติดตามการรับ-จ่ายน้ำมัน Real-time</p>
+        <h1>🛢️ Oil Store Mobile</h1>
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 2px;">ระบบควบคุมสต็อกน้ำมันผ่านมือถือ</p>
       </div>
-      <button onclick="loadOilData()" class="btn" style="background: #334155; color: #fff;">🔄 ดึงข้อมูลล่าสุด</button>
+      <button onclick="loadOilData()" class="btn-refresh">🔄 ดึงข้อมูล</button>
     </div>
 
-    <!-- KPIs -->
-    <div class="kpi-grid">
-      <div class="kpi-card" style="border-top-color: #0284c7;">
-        <div class="kpi-title">สต็อกน้ำมันคงเหลือรวม</div>
-        <div id="kpiStock" class="kpi-value" style="color: #0284c7;">0 ลิตร</div>
-      </div>
-      <div class="kpi-card" style="border-top-color: #16a34a;">
-        <div class="kpi-title">รับเข้าทั้งหมด</div>
-        <div id="kpiIn" class="kpi-value" style="color: #16a34a;">0 ลิตร</div>
-      </div>
-      <div class="kpi-card" style="border-top-color: #dc2626;">
-        <div class="kpi-title">จ่ายออกทั้งหมด</div>
-        <div id="kpiOut" class="kpi-value" style="color: #dc2626;">0 ลิตร</div>
+    <!-- Stock Dashboard -->
+    <div>
+      <div class="dashboard-title">📊 ยอดน้ำมันคงเหลือปัจจุบัน</div>
+      <div class="oil-grid">
+        <div class="oil-card" style="border-left-color: #f59e0b;">
+          <div class="oil-name">🥥 น้ำมันมะพร้าว</div>
+          <div id="stockCoconut" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
+        </div>
+        <div class="oil-card" style="border-left-color: #ef4444;">
+          <div class="oil-name">🛡️ น้ำมันกันสนิม</div>
+          <div id="stockAntiRust" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
+        </div>
+        <div class="oil-card" style="border-left-color: #3b82f6;">
+          <div class="oil-name">⚙️ น้ำมัน S575 คอลล่า</div>
+          <div id="stockS575" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
+        </div>
+        <div class="oil-card" style="border-left-color: #10b981;">
+          <div class="oil-name">🏭 น้ำมันขึ้นรูป Stamping</div>
+          <div id="stockStamping" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
+        </div>
       </div>
     </div>
 
-    <!-- Form -->
-    <div class="card">
-      <h2 class="card-title">📝 บันทึกการรับ-จ่ายน้ำมัน</h2>
+    <!-- Mobile Entry Form -->
+    <div class="mobile-form">
+      <div class="form-title">📲 ลงบันทึก รับเข้า / จ่ายออก</div>
+      
+      <div class="type-selector">
+        <div id="btnOut" class="type-btn active-out" onclick="selectType('OUT')">🔴 จ่ายออก</div>
+        <div id="btnIn" class="type-btn" onclick="selectType('IN')">🟢 รับเข้า Store</div>
+      </div>
+
       <form id="oilForm" onsubmit="submitOilTransaction(event)">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>ประเภทรายการ</label>
-            <select id="transType" required onchange="toggleFormMode()">
-              <option value="OUT">🔴 จ่ายออก (Dispense)</option>
-              <option value="IN">🟢 รับเข้า Store (Receive)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>ชนิดน้ำมัน</label>
-            <select id="oilType" required>
-              <option value="มะพร้าว">พร้าว</option>
-              <option value="ขึ้นรูป Stamping oil">ขึ้นรูป Stamping oil</option>
-              <option value="น้ำมันกันสนิม">น้ำมันกันสนิม</option>
-              <option value="S575 คอลล่า ">น้S575 คอลล่า</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>จำนวน (ลิตร)</label>
-            <input type="number" id="oilQty" step="0.1" required placeholder="0.00">
-          </div>
-          <div class="form-group">
-            <label id="destLabel">จุดจ่าย / เครื่องจักรที่รับ</label>
-            <input type="text" id="destination" placeholder="เช่น MC-01, Forklift 02" required>
-          </div>
-          <div class="form-group">
-            <label>เลขมิเตอร์ เริ่มต้น</label>
-            <input type="number" id="meterStart" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label>เลขมิเตอร์ สิ้นสุด</label>
-            <input type="number" id="meterEnd" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label>ผู้เบิก / Operator</label>
-            <input type="text" id="operator" placeholder="ชื่อผู้เบิก/ช่าง" required>
+        <div class="form-group">
+          <label>เลือกชนิดน้ำมัน</label>
+          <select id="oilType" required>
+            <option value="น้ำมันมะพร้าว">1. น้ำมันมะพร้าว</option>
+            <option value="น้ำมันกันสนิม">2. น้ำมันกันสนิม</option>
+            <option value="น้ำมันS575 คอลล่า">3. น้ำมันS575 คอลล่า</option>
+            <option value="น้ำมันขึ้นรูป Stamping oil">4. น้ำมันขึ้นรูป Stamping oil</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>จำนวน (ลิตร)</label>
+          <input type="number" id="oilQty" step="0.1" required placeholder="0.00" inputmode="decimal">
+          <div class="quick-qty">
+            <button type="button" class="quick-btn" onclick="addQty(5)">+5</button>
+            <button type="button" class="quick-btn" onclick="addQty(10)">+10</button>
+            <button type="button" class="quick-btn" onclick="addQty(20)">+20</button>
+            <button type="button" class="quick-btn" onclick="addQty(200)">+200 (ถัง)</button>
           </div>
         </div>
-        <button type="submit" class="btn btn-submit">💾 บันทึกข้อมูลลง Cloud</button>
+
+        <div class="form-group">
+          <label id="destLabel">เครื่องจักร / แผนกที่รับไปใช้</label>
+          <input type="text" id="destination" placeholder="เช่น MC-01, แผนกปั๊ม" required>
+        </div>
+
+        <div class="form-group">
+          <label>ผู้ทำรายการ / Operator</label>
+          <input type="text" id="operator" placeholder="ชื่อผู้เบิกหรือช่าง" required>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-submit">💾 บันทึกรายการลง Cloud</button>
       </form>
     </div>
 
-    <!-- Table -->
-    <div class="card">
-      <h2 class="card-title" style="color: #0f172a;">📋 ประวัติการรับ-จ่ายน้ำมันล่าสุด</h2>
-      <div style="overflow-x: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>วัน-เวลา</th>
-              <th>ประเภท</th>
-              <th>ชนิดน้ำมัน</th>
-              <th style="text-align: right;">จำนวน (ลิตร)</th>
-              <th>จุดใช้งาน / ซัพพลายเออร์</th>
-              <th>เลขมิเตอร์ (เริ่ม - จบ)</th>
-              <th>ผู้ทำรายการ</th>
-            </tr>
-          </thead>
-          <tbody id="oilTableBody">
-            <tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 20px;">ยังไม่มีข้อมูลการรับ-จ่ายน้ำมัน</td></tr>
-          </tbody>
-        </table>
+    <!-- History Log -->
+    <div class="history-card">
+      <div class="dashboard-title" style="margin-bottom: 8px;">📋 ประวัติการทำรายการล่าสุด</div>
+      <div id="logList">
+        <p style="text-align: center; color: #64748b; padding: 10px; font-size: 12px;">กำลังโหลดประวัติ...</p>
       </div>
     </div>
 
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQBXdSHpcCXa5hM2asS-9w1xEwXVoPuuRUHCsjNR1k9zEKCdILqT8OslxxWsJsLVV0/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwvRMB7WABmzkV461dRTFiU8t-syZ2ivrhRAu2JuDb2PxCUP9XkEjUqsOWJ7BD76xGu/exec";
 
+    let currentType = 'OUT';
     let oilLogs = [];
 
     function showLoading(show) {
       document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
     }
 
-    function toggleFormMode() {
-      const type = document.getElementById('transType').value;
+    function selectType(type) {
+      currentType = type;
+      const btnIn = document.getElementById('btnIn');
+      const btnOut = document.getElementById('btnOut');
       const destLabel = document.getElementById('destLabel');
-      destLabel.textContent = type === 'IN' ? 'รับจาก (Supplier / คลัง)' : 'จุดจ่าย / เครื่องจักรที่รับ';
+
+      if (type === 'IN') {
+        btnIn.className = 'type-btn active-in';
+        btnOut.className = 'type-btn';
+        destLabel.textContent = 'รับมาจาก (Supplier / คลังใหญ่)';
+      } else {
+        btnIn.className = 'type-btn';
+        btnOut.className = 'type-btn active-out';
+        destLabel.textContent = 'เครื่องจักร / แผนกที่รับไปใช้';
+      }
+    }
+
+    function addQty(amount) {
+      const input = document.getElementById('oilQty');
+      const val = parseFloat(input.value) || 0;
+      input.value = val + amount;
     }
 
     async function loadOilData() {
@@ -164,13 +189,68 @@
       try {
         const res = await fetch(`${GOOGLE_SCRIPT_URL}?module=oil`, { method: 'GET', redirect: 'follow' });
         oilLogs = await res.json();
-        renderOilData();
+        calculateDashboard();
+        renderLogs();
       } catch (err) {
-        alert("❌ เกิดข้อผิดพลาดในการดึงข้อมูลคลังน้ำมัน");
+        alert("❌ เกิดข้อผิดพลาดในการดึงข้อมูล");
         console.error(err);
       } finally {
         showLoading(false);
       }
+    }
+
+    function calculateDashboard() {
+      const stocks = {
+        'น้ำมันมะพร้าว': 0,
+        'น้ำมันกันสนิม': 0,
+        'น้ำมันS575 คอลล่า': 0,
+        'น้ำมันขึ้นรูป Stamping oil': 0
+      };
+
+      oilLogs.forEach(item => {
+        const qty = parseFloat(item.qty) || 0;
+        const name = item.oilType;
+        if (stocks.hasOwnProperty(name)) {
+          if (item.type === 'IN') stocks[name] += qty;
+          else stocks[name] -= qty;
+        }
+      });
+
+      document.getElementById('stockCoconut').innerHTML = `${stocks['น้ำมันมะพร้าว'].toLocaleString(undefined, {minimumFractionDigits: 1})} <span class="oil-unit">ลิตร</span>`;
+      document.getElementById('stockAntiRust').innerHTML = `${stocks['น้ำมันกันสนิม'].toLocaleString(undefined, {minimumFractionDigits: 1})} <span class="oil-unit">ลิตร</span>`;
+      document.getElementById('stockS575').innerHTML = `${stocks['น้ำมันS575 คอลล่า'].toLocaleString(undefined, {minimumFractionDigits: 1})} <span class="oil-unit">ลิตร</span>`;
+      document.getElementById('stockStamping').innerHTML = `${stocks['น้ำมันขึ้นรูป Stamping oil'].toLocaleString(undefined, {minimumFractionDigits: 1})} <span class="oil-unit">ลิตร</span>`;
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('logList');
+      container.innerHTML = '';
+
+      if (!oilLogs || oilLogs.length === 0) {
+        container.innerHTML = `<p style="text-align: center; color: #64748b; padding: 10px; font-size: 12px;">ยังไม่มีประวัติการทำรายการ</p>`;
+        return;
+      }
+
+      [...oilLogs].reverse().slice(0, 10).forEach(item => {
+        const isIn = item.type === 'IN';
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        div.innerHTML = `
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="log-tag ${isIn ? 'tag-in' : 'tag-out'}">${isIn ? 'รับเข้า' : 'จ่ายออก'}</span>
+              <strong style="font-size: 13px;">${item.oilType}</strong>
+            </div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
+              ${item.destination} | ${item.operator} (${item.timestamp || '-'})
+            </div>
+          </div>
+          <div style="font-size: 14px; font-weight: bold; color: ${isIn ? '#34d399' : '#fda4af'};">
+            ${isIn ? '+' : '-'}${parseFloat(item.qty).toLocaleString()} ลิตร
+          </div>
+        `;
+        container.appendChild(div);
+      });
     }
 
     async function submitOilTransaction(e) {
@@ -178,12 +258,10 @@
       showLoading(true);
 
       const data = {
-        type: document.getElementById('transType').value,
+        type: currentType,
         oilType: document.getElementById('oilType').value,
         qty: parseFloat(document.getElementById('oilQty').value) || 0,
         destination: document.getElementById('destination').value,
-        meterStart: document.getElementById('meterStart').value,
-        meterEnd: document.getElementById('meterEnd').value,
         operator: document.getElementById('operator').value
       };
 
@@ -196,62 +274,13 @@
         });
 
         document.getElementById('oilForm').reset();
-        toggleFormMode();
+        selectType('OUT');
         setTimeout(loadOilData, 1500);
-        alert("✅ บันทึกรายการรับ-จ่ายน้ำมัน เรียบร้อยแล้ว!");
+        alert("✅ บันทึกรายการลง Google Sheets เรียบร้อย!");
       } catch (err) {
-        alert("❌ บันทึกรายการไม่สำเร็จ");
+        alert("❌ ไม่สามารถบันทึกข้อมูลได้");
         showLoading(false);
       }
-    }
-
-    function renderOilData() {
-      let totalIn = 0;
-      let totalOut = 0;
-
-      const tbody = document.getElementById('oilTableBody');
-      tbody.innerHTML = '';
-
-      if (!oilLogs || oilLogs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 20px;">ยังไม่มีข้อมูลการรับ-จ่ายน้ำมัน</td></tr>`;
-        document.getElementById('kpiStock').textContent = '0 ลิตร';
-        document.getElementById('kpiIn').textContent = '0 ลิตร';
-        document.getElementById('kpiOut').textContent = '0 ลิตร';
-        return;
-      }
-
-      // วนลูปคำนวณและแสดงผลรายการ (เรียงรายการใหม่อยู่บนสุด)
-      [...oilLogs].reverse().forEach(item => {
-        const qty = Number(item.qty) || 0;
-        if (item.type === 'IN') {
-          totalIn += qty;
-        } else {
-          totalOut += qty;
-        }
-
-        const tag = item.type === 'IN' 
-          ? `<span class="tag-in">🟢 รับเข้า</span>` 
-          : `<span class="tag-out">🔴 จ่ายออก</span>`;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="font-size: 12px; color: #64748b;">${item.timestamp || '-'}</td>
-          <td>${tag}</td>
-          <td style="font-weight: bold;">${item.oilType}</td>
-          <td style="text-align: right; font-weight: bold; color: ${item.type === 'IN' ? '#16a34a' : '#dc2626'};">
-            ${item.type === 'IN' ? '+' : '-'}${qty.toLocaleString(undefined, {minimumFractionDigits: 1})}
-          </td>
-          <td>${item.destination || '-'}</td>
-          <td style="font-size: 12px; color: #475569;">${item.meterStart || '-'} ➔ ${item.meterEnd || '-'}</td>
-          <td style="font-weight: bold;">${item.operator || '-'}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      const currentStock = totalIn - totalOut;
-      document.getElementById('kpiStock').textContent = `${currentStock.toLocaleString(undefined, {minimumFractionDigits: 1})} ลิตร`;
-      document.getElementById('kpiIn').textContent = `${totalIn.toLocaleString(undefined, {minimumFractionDigits: 1})} ลิตร`;
-      document.getElementById('kpiOut').textContent = `${totalOut.toLocaleString(undefined, {minimumFractionDigits: 1})} ลิตร`;
     }
 
     window.onload = loadOilData;
