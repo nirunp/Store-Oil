@@ -78,7 +78,7 @@
     <div class="header">
       <div>
         <h1>🛢️ Oil Store Mobile</h1>
-        <p style="font-size: 11px; color: #94a3b8; margin-top: 2px;">ระบบควบคุมสต็อกน้ำมัน (Min Stock: 50L)</p>
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 2px;">ระบบควบคุมสต็อกน้ำมันผ่านมือถือ</p>
       </div>
       <button onclick="loadOilData()" class="btn-refresh">🔄 ดึงข้อมูล</button>
     </div>
@@ -107,7 +107,6 @@
           <div id="stockStamping" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
           <div id="alertStamping" class="hidden"></div>
         </div>
-        <!-- รายการที่ 5 เพิ่มใหม่ -->
         <div id="cardHPTC" class="oil-card" style="border-left-color: #a855f7; grid-column: span 2;">
           <div class="oil-name">⚡ น้ำมัน HP TC</div>
           <div id="stockHPTC" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
@@ -129,11 +128,11 @@
         <div class="form-group">
           <label>เลือกชนิดน้ำมัน</label>
           <select id="oilType" required>
-            <option value="น้ำมันมะพร้าว">1. น้ำมันมะพร้าว</option>
-            <option value="น้ำมันกันสนิม">2. น้ำมันกันสนิม</option>
-            <option value="น้ำมันS575 คอลล่า">3. น้ำมันS575 คอลล่า</option>
-            <option value="น้ำมันขึ้นรูป Stamping oil">4. น้ำมันขึ้นรูป Stamping oil</option>
-            <option value="น้ำมัน HP TC">5. น้ำมัน HP TC</option>
+            <option value="น้ำมันมะพร้าว">1. น้ำมันมะพร้าว (Min 50L)</option>
+            <option value="น้ำมันกันสนิม">2. น้ำมันกันสนิม (Min 50L)</option>
+            <option value="น้ำมันS575 คอลล่า">3. น้ำมันS575 คอลล่า (Min 5L)</option>
+            <option value="น้ำมันขึ้นรูป Stamping oil">4. น้ำมันขึ้นรูป Stamping oil (Min 50L)</option>
+            <option value="น้ำมัน HP TC">5. น้ำมัน HP TC (Min 50L)</option>
           </select>
         </div>
 
@@ -179,8 +178,16 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQBXdSHpcCXa5hM2asS-9w1xEwXVoPuuRUHCsjNR1k9zEKCdILqT8OslxxWsJsLVV0/exec";
-    const MIN_STOCK = 50; // กำหนดเกณฑ์ Minimum Stock ที่ 50 ลิตร
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwvRMB7WABmzkV461dRTFiU8t-syZ2ivrhRAu2JuDb2PxCUP9XkEjUqsOWJ7BD76xGu/exec";
+
+    // กำหนด Minimum Stock ของแต่ละรายการแยกกัน
+    const MIN_STOCKS = {
+      'น้ำมันมะพร้าว': 50,
+      'น้ำมันกันสนิม': 50,
+      'น้ำมันS575 คอลล่า': 5,  // ปรับเฉพาะ S575 คอลล่า เป็น 5 ลิตร
+      'น้ำมันขึ้นรูป Stamping oil': 50,
+      'น้ำมัน HP TC': 50
+    };
 
     let currentType = 'OUT';
     let oilLogs = [];
@@ -258,20 +265,21 @@
 
       for (let oil in stocks) {
         const currentQty = stocks[oil];
+        const minLimit = MIN_STOCKS[oil] || 50; // ดึงค่า Min Stock เฉพาะตัว
         const elem = map[oil];
         
         // แสดงตัวเลข
         document.getElementById(elem.stock).innerHTML = `${currentQty.toLocaleString(undefined, {minimumFractionDigits: 1})} <span class="oil-unit">ลิตร</span>`;
         
-        // เช็คสั่งซื้อ / ต่ำกว่า Minimum Stock (50 ลิตร)
+        // เช็คการแจ้งเตือนเทียบกับค่า Min Limit ของน้ำมันตัวนั้นๆ
         const cardElem = document.getElementById(elem.card);
         const alertElem = document.getElementById(elem.alert);
 
-        if (currentQty < MIN_STOCK) {
+        if (currentQty < minLimit) {
           cardElem.classList.add('low-stock');
           alertElem.className = 'low-alert-tag';
-          alertElem.innerHTML = `⚠️ ต่ำกว่า Min Stock (${MIN_STOCK}L)`;
-          lowStockList.push(`${oil}: เหลือ ${currentQty} ลิตร`);
+          alertElem.innerHTML = `⚠️ ต่ำกว่า Min Stock (${minLimit}L)`;
+          lowStockList.push(`${oil}: เหลือ ${currentQty} ลิตร (Min: ${minLimit}L)`);
         } else {
           cardElem.classList.remove('low-stock');
           alertElem.className = 'hidden';
@@ -282,7 +290,7 @@
       // แสดง Alert หากมีน้ำมันสต็อกต่ำกว่าเกณฑ์
       if (lowStockList.length > 0) {
         setTimeout(() => {
-          alert(`⚠️ แจ้งเตือนน้ำมันใกล้หมด (น้อยกว่า ${MIN_STOCK} ลิตร):\n\n` + lowStockList.join('\n'));
+          alert(`⚠️ แจ้งเตือนน้ำมันใกล้หมดเกณฑ์คงเหลือขั้นต่ำ:\n\n` + lowStockList.join('\n'));
         }, 500);
       }
     }
