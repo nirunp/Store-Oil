@@ -14,14 +14,19 @@
     .header h1 { font-size: 18px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px; }
     .btn-refresh { background: #334155; color: #f8fafc; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
-    /* Dashboard Grid (4 ชนิดน้ำมัน) */
+    /* Dashboard Grid (5 ชนิดน้ำมัน) */
     .dashboard-title { font-size: 14px; font-weight: bold; color: #94a3b8; margin-bottom: 2px; }
     .oil-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .oil-card { background: #1e293b; padding: 12px; border-radius: 12px; border: 1px solid #334155; position: relative; overflow: hidden; }
+    .oil-card { background: #1e293b; padding: 12px; border-radius: 12px; border: 1px solid #334155; position: relative; overflow: hidden; transition: all 0.3s ease; }
     .oil-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #38bdf8; }
     .oil-name { font-size: 12px; font-weight: bold; color: #cbd5e1; height: 32px; display: flex; align-items: center; }
     .oil-qty { font-size: 20px; font-weight: 800; color: #f8fafc; margin-top: 4px; }
     .oil-unit { font-size: 11px; color: #64748b; font-weight: normal; }
+
+    /* Low Stock Warning State */
+    .oil-card.low-stock { border: 1px solid #ef4444; background: #2a1215; }
+    .oil-card.low-stock::before { background: #ef4444; }
+    .low-alert-tag { font-size: 10px; color: #fca5a5; background: #7f1d1d; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin-top: 4px; }
 
     /* Form Panel (Mobile Entry) */
     .mobile-form { background: #1e293b; padding: 16px; border-radius: 16px; border: 1px solid #334155; }
@@ -50,7 +55,7 @@
     .tag-in { background: #065f46; color: #34d399; }
     .tag-out { background: #881337; color: #fda4af; }
 
-    /* System Action Zone (ล้างข้อมูล) */
+    /* Danger Zone */
     .danger-zone { background: #1e293b; padding: 16px; border-radius: 14px; border: 1px dashed #ef4444; margin-top: 10px; }
     .btn-clear { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #991b1b; color: #fecaca; font-weight: bold; font-size: 13px; cursor: pointer; }
     .btn-clear:hover { background: #dc2626; color: #fff; }
@@ -73,7 +78,7 @@
     <div class="header">
       <div>
         <h1>🛢️ Oil Store Mobile</h1>
-        <p style="font-size: 11px; color: #94a3b8; margin-top: 2px;">ระบบควบคุมสต็อกน้ำมันผ่านมือถือ</p>
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 2px;">ระบบควบคุมสต็อกน้ำมัน (Min Stock: 50L)</p>
       </div>
       <button onclick="loadOilData()" class="btn-refresh">🔄 ดึงข้อมูล</button>
     </div>
@@ -82,21 +87,31 @@
     <div>
       <div class="dashboard-title">📊 ยอดน้ำมันคงเหลือปัจจุบัน</div>
       <div class="oil-grid">
-        <div class="oil-card" style="border-left-color: #f59e0b;">
+        <div id="cardCoconut" class="oil-card" style="border-left-color: #f59e0b;">
           <div class="oil-name">🥥 น้ำมันมะพร้าว</div>
           <div id="stockCoconut" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
+          <div id="alertCoconut" class="hidden"></div>
         </div>
-        <div class="oil-card" style="border-left-color: #ef4444;">
+        <div id="cardAntiRust" class="oil-card" style="border-left-color: #ef4444;">
           <div class="oil-name">🛡️ น้ำมันกันสนิม</div>
           <div id="stockAntiRust" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
+          <div id="alertAntiRust" class="hidden"></div>
         </div>
-        <div class="oil-card" style="border-left-color: #3b82f6;">
-          <div class="oil-name">⚙️ น้ำมัน S575 คอลล่า</div>
+        <div id="cardS575" class="oil-card" style="border-left-color: #3b82f6;">
+          <div class="oil-name">⚙️ น้ำมันS575 คอลล่า</div>
           <div id="stockS575" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
+          <div id="alertS575" class="hidden"></div>
         </div>
-        <div class="oil-card" style="border-left-color: #10b981;">
+        <div id="cardStamping" class="oil-card" style="border-left-color: #10b981;">
           <div class="oil-name">🏭 น้ำมันขึ้นรูป Stamping</div>
           <div id="stockStamping" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
+          <div id="alertStamping" class="hidden"></div>
+        </div>
+        <!-- รายการที่ 5 เพิ่มใหม่ -->
+        <div id="cardHPTC" class="oil-card" style="border-left-color: #a855f7; grid-column: span 2;">
+          <div class="oil-name">⚡ น้ำมัน HP TC</div>
+          <div id="stockHPTC" class="oil-qty">0 <span class="oil-unit">ลิตร</span></div>
+          <div id="alertHPTC" class="hidden"></div>
         </div>
       </div>
     </div>
@@ -118,6 +133,7 @@
             <option value="น้ำมันกันสนิม">2. น้ำมันกันสนิม</option>
             <option value="น้ำมันS575 คอลล่า">3. น้ำมันS575 คอลล่า</option>
             <option value="น้ำมันขึ้นรูป Stamping oil">4. น้ำมันขึ้นรูป Stamping oil</option>
+            <option value="น้ำมัน HP TC">5. น้ำมัน HP TC</option>
           </select>
         </div>
 
@@ -164,6 +180,7 @@
 
   <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQBXdSHpcCXa5hM2asS-9w1xEwXVoPuuRUHCsjNR1k9zEKCdILqT8OslxxWsJsLVV0/exec";
+    const MIN_STOCK = 50; // กำหนดเกณฑ์ Minimum Stock ที่ 50 ลิตร
 
     let currentType = 'OUT';
     let oilLogs = [];
@@ -215,7 +232,8 @@
         'น้ำมันมะพร้าว': 0,
         'น้ำมันกันสนิม': 0,
         'น้ำมันS575 คอลล่า': 0,
-        'น้ำมันขึ้นรูป Stamping oil': 0
+        'น้ำมันขึ้นรูป Stamping oil': 0,
+        'น้ำมัน HP TC': 0
       };
 
       oilLogs.forEach(item => {
@@ -227,10 +245,46 @@
         }
       });
 
-      document.getElementById('stockCoconut').innerHTML = `${stocks['น้ำมันมะพร้าว'].toLocaleString(undefined, {minimumFractionDigits: 1})} <span class="oil-unit">ลิตร</span>`;
-      document.getElementById('stockAntiRust').innerHTML = `${stocks['น้ำมันกันสนิม'].toLocaleString(undefined, {minimumFractionDigits: 1})} <span class="oil-unit">ลิตร</span>`;
-      document.getElementById('stockS575').innerHTML = `${stocks['น้ำมันS575 คอลล่า'].toLocaleString(undefined, {minimumFractionDigits: 1})} <span class="oil-unit">ลิตร</span>`;
-      document.getElementById('stockStamping').innerHTML = `${stocks['น้ำมันขึ้นรูป Stamping oil'].toLocaleString(undefined, {minimumFractionDigits: 1})} <span class="oil-unit">ลิตร</span>`;
+      // Mapping Element IDs
+      const map = {
+        'น้ำมันมะพร้าว': { stock: 'stockCoconut', card: 'cardCoconut', alert: 'alertCoconut' },
+        'น้ำมันกันสนิม': { stock: 'stockAntiRust', card: 'cardAntiRust', alert: 'alertAntiRust' },
+        'น้ำมันS575 คอลล่า': { stock: 'stockS575', card: 'cardS575', alert: 'alertS575' },
+        'น้ำมันขึ้นรูป Stamping oil': { stock: 'stockStamping', card: 'cardStamping', alert: 'alertStamping' },
+        'น้ำมัน HP TC': { stock: 'stockHPTC', card: 'cardHPTC', alert: 'alertHPTC' }
+      };
+
+      let lowStockList = [];
+
+      for (let oil in stocks) {
+        const currentQty = stocks[oil];
+        const elem = map[oil];
+        
+        // แสดงตัวเลข
+        document.getElementById(elem.stock).innerHTML = `${currentQty.toLocaleString(undefined, {minimumFractionDigits: 1})} <span class="oil-unit">ลิตร</span>`;
+        
+        // เช็คสั่งซื้อ / ต่ำกว่า Minimum Stock (50 ลิตร)
+        const cardElem = document.getElementById(elem.card);
+        const alertElem = document.getElementById(elem.alert);
+
+        if (currentQty < MIN_STOCK) {
+          cardElem.classList.add('low-stock');
+          alertElem.className = 'low-alert-tag';
+          alertElem.innerHTML = `⚠️ ต่ำกว่า Min Stock (${MIN_STOCK}L)`;
+          lowStockList.push(`${oil}: เหลือ ${currentQty} ลิตร`);
+        } else {
+          cardElem.classList.remove('low-stock');
+          alertElem.className = 'hidden';
+          alertElem.innerHTML = '';
+        }
+      }
+
+      // แสดง Alert หากมีน้ำมันสต็อกต่ำกว่าเกณฑ์
+      if (lowStockList.length > 0) {
+        setTimeout(() => {
+          alert(`⚠️ แจ้งเตือนน้ำมันใกล้หมด (น้อยกว่า ${MIN_STOCK} ลิตร):\n\n` + lowStockList.join('\n'));
+        }, 500);
+      }
     }
 
     function renderLogs() {
