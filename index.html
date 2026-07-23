@@ -50,6 +50,11 @@
     .tag-in { background: #065f46; color: #34d399; }
     .tag-out { background: #881337; color: #fda4af; }
 
+    /* System Action Zone (ล้างข้อมูล) */
+    .danger-zone { background: #1e293b; padding: 16px; border-radius: 14px; border: 1px dashed #ef4444; margin-top: 10px; }
+    .btn-clear { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #991b1b; color: #fecaca; font-weight: bold; font-size: 13px; cursor: pointer; }
+    .btn-clear:hover { background: #dc2626; color: #fff; }
+
     #loadingOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; color: #fff; }
     .hidden { display: none !important; }
   </style>
@@ -147,6 +152,12 @@
       <div id="logList">
         <p style="text-align: center; color: #64748b; padding: 10px; font-size: 12px;">กำลังโหลดประวัติ...</p>
       </div>
+    </div>
+
+    <!-- Danger Zone (ล้างข้อมูล) -->
+    <div class="danger-zone">
+      <div class="dashboard-title" style="color: #fca5a5; margin-bottom: 8px;">⚠️ การจัดการระบบ (System Management)</div>
+      <button type="button" onclick="clearOilData()" class="btn-clear">🗑️ ล้างข้อมูลประวัติรับ-จ่ายน้ำมันทั้งหมด</button>
     </div>
 
   </div>
@@ -279,6 +290,27 @@
         alert("✅ บันทึกรายการลง Google Sheets เรียบร้อย!");
       } catch (err) {
         alert("❌ ไม่สามารถบันทึกข้อมูลได้");
+        showLoading(false);
+      }
+    }
+
+    async function clearOilData() {
+      const confirmClear = confirm("⚠️ คำเตือน: คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลรับ-จ่ายน้ำมันทั้งหมดในคลัง?\n\nการกระทำนี้ไม่สามารถยกเลิกได้!");
+      if (!confirmClear) return;
+
+      showLoading(true);
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: "clearOilData" })
+        });
+
+        setTimeout(loadOilData, 1500);
+        alert("🗑️ ล้างข้อมูลคลังน้ำมันทั้งหมดเรียบร้อยแล้ว!");
+      } catch (err) {
+        alert("❌ ไม่สามารถล้างข้อมูลได้");
         showLoading(false);
       }
     }
